@@ -1,0 +1,16 @@
+{
+  "name": "glyphwild-playwright-examples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Starter Playwright API tests for the Glyphwild TCG API",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

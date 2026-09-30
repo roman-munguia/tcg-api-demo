@@ -1,0 +1,29 @@
+{
+  "name": "tcg-api-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Glyphwild TCG API - a practice REST API for teaching API test automation",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env --disable-warning=ExperimentalWarning src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\"",
+    "reset": "node --env-file-if-exists=.env scripts/reset.js",
+    "examples:install": "npm --prefix examples/playwright ci",
+    "examples:test": "npm --prefix examples/playwright test"
+  },
+  "scarfSettings": {
+    "enabled": false
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "express": "5.2.1",
+    "swagger-ui-dist": "5.33.0",
+    "swagger-ui-express": "5.0.1"
+  }
+}
