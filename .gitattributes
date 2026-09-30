@@ -1,0 +1,2 @@
+# Keep LF line endings on Windows checkouts, so the Dockerfile, .env and shell snippets keep working.
+* text=auto eol=lf

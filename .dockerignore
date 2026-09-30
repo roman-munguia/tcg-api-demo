@@ -1,0 +1,12 @@
+# Keep the build context small: only package*.json and src/ are needed in the image.
+# (Podman/Buildah read this file too when there is no .containerignore.)
+node_modules
+data
+*.db
+*.db-*
+.env
+.git
+test
+examples
+scripts
+*.md

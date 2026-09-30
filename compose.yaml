@@ -1,0 +1,60 @@
+# Glyphwild TCG API - Compose file (older tutorials call it docker-compose.yml; both names work).
+#
+#   Start:  docker compose up --build -d        (Podman: podman-compose up --build -d)
+#   Logs:   docker compose logs -f api          (Podman: podman-compose logs -f api)
+#   Stop:   docker compose down                 (add -v to ALSO delete the data volume)
+#
+# Every ${NAME:-default} below can be set in your shell or in a .env file next to this file
+# (copy .env.example to .env). Nothing has to be set: the defaults work out of the box.
+# After changing a value run `docker compose up -d` again: it re-creates the container.
+# (`docker compose restart` does NOT pick up changed values.)
+
+name: tcg-api-demo                   # project name: prefix of the container, network and volume names
+
+services:
+  api:                               # service name, used in `docker compose logs api`, `exec api ...`
+    build:                           # how to build the image (used by `up --build` and `build`)
+      context: .                     # folder sent to the builder (filtered by .dockerignore)
+      dockerfile: Dockerfile         # recipe inside that folder
+      args:
+        NODE_VERSION: ${NODE_VERSION:-24}   # Node major of the base image: 22, 24 (LTS) or 26
+    image: tcg-api-demo:local        # name:tag given to the built image (Podman shows localhost/tcg-api-demo)
+    ports:
+      - "${HOST_PORT:-3000}:3000"    # "<port on your computer>:<port inside the container>".
+                                     # Change only HOST_PORT (e.g. 8080) -> http://localhost:8080/docs/
+                                     # Rootless Podman cannot use host ports below 1024.
+    environment:                     # variables INSIDE the container: ${X:-d} = X from your shell/.env, else d
+      # --- fixed wiring: leave as is
+      DB_FILE: /app/data/tcg.db      # SQLite file; it must live in the volume below or it dies with the container
+      # --- data
+      RESET_ON_START: ${RESET_ON_START:-true}         # true = fresh seed data on every start; false = keep your changes
+      # --- users (hardcoded defaults; override them for your class)
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}        # can read AND write
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      VIEWER_USERNAME: ${VIEWER_USERNAME:-viewer}     # read-only: every write returns 403
+      VIEWER_PASSWORD: ${VIEWER_PASSWORD:-viewer123}
+      TOKEN_TTL_SECONDS: ${TOKEN_TTL_SECONDS:-86400}  # token lifetime in seconds; try 30 to practise 401 TOKEN_EXPIRED
+      # --- teaching knobs: they affect ONLY /cards and /decks (never /health, /docs, /auth, /reset)
+      LATENCY_MS: ${LATENCY_MS:-0}                    # extra delay per request in ms; try 2000 for timeout lessons
+      CHAOS_RATE: ${CHAOS_RATE:-0}                    # 0..1 share of successful requests that fail with 500; try 0.3
+      TEACHING_HEADERS: ${TEACHING_HEADERS:-true}     # allow the X-Delay-Ms / X-Chaos-Fail-Times / X-Chaos-Key headers
+      # --- misc
+      LOG_REQUESTS: ${LOG_REQUESTS:-true}             # one log line per request (see `docker compose logs -f api`)
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}                  # browser origins allowed to call the API (* or a comma-separated list)
+    volumes:
+      - tcg-data:/app/data           # named volume: keeps the database FILE across `down`/`up` (not `down -v`).
+                                     # Its CONTENT is reset on every start unless RESET_ON_START=false.
+      # Bind-mount alternative, to see the file on your computer:
+      #   - ./data:/app/data         (Podman on Fedora/SELinux: ./data:/app/data:Z,U)
+    init: true                       # tiny init process as PID 1: Ctrl+C / `stop` shut Node down promptly
+    restart: "no"                    # "no" | "on-failure" | "unless-stopped" | "always"
+                                     # use unless-stopped for an instructor-hosted server that should survive reboots
+    healthcheck:                     # container becomes "healthy" once GET /health answers 2xx
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s                  # time between checks
+      timeout: 3s                    # a check slower than this counts as failed
+      retries: 3                     # failures in a row before "unhealthy"
+      start_period: 5s               # grace period after the container starts
+
+volumes:
+  tcg-data: {}                       # created on the first `up`; list with `docker volume ls` / `podman volume ls`
