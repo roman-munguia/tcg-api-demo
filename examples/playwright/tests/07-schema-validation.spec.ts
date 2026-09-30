@@ -18,6 +18,12 @@ test('GET /cards?id= matches the Card schema', async ({ request }) => {
   expect(validate(card), ajv.errorsText(validate.errors)).toBe(true);
 });
 
+test('GET /cards (all cards) matches the CardList schema', async ({ request }) => {
+  const validate = await validatorFor(request, 'CardList');
+  const cards = await (await request.get('/cards')).json();
+  expect(validate(cards), ajv.errorsText(validate.errors)).toBe(true);
+});
+
 test('search results match the CardPage schema', async ({ request }) => {
   const validate = await validatorFor(request, 'CardPage');
   const page = await (await request.get('/cards/search', { params: { pageSize: 50 } })).json();
@@ -26,7 +32,7 @@ test('search results match the CardPage schema', async ({ request }) => {
 
 test('errors match the ErrorResponse schema', async ({ request }) => {
   const validate = await validatorFor(request, 'ErrorResponse');
-  const error = await (await request.get('/cards')).json();
+  const error = await (await request.get('/cards', { params: { id: 'not-a-uuid' } })).json();
   expect(validate(error), ajv.errorsText(validate.errors)).toBe(true);
 });
 

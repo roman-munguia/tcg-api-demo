@@ -4,8 +4,8 @@
 
 import express from 'express';
 import { requireAdmin, requireUser, login, logout, me } from './auth.js';
-import { createCard, deleteCard, getCard, replaceCard, searchCards } from './cards.js';
-import { createDeck, deckRules, deleteDeck, getDeck, replaceDeck, searchDecks } from './decks.js';
+import { createCard, deleteCard, getCards, replaceCard, searchCards } from './cards.js';
+import { createDeck, deckRules, deleteDeck, getDecks, replaceDeck, searchDecks } from './decks.js';
 import { idMatchesQuery } from './common.js';
 import { mountDocs } from './docs.js';
 import { errorHandler, notFoundOrMethodNotAllowed } from './errors.js';
@@ -67,13 +67,13 @@ export function createApp({ config, db, now = Date.now }) {
 
   const cardSearchRules = minNotAboveMax(['minDropRate', 'maxDropRate'], ['minPoints', 'maxPoints']);
   app.get('/cards/search', latency, validate({ query: S.CardSearchQuery, check: cardSearchRules }), searchCards);
-  app.get('/cards', latency, validate({ query: S.IdQuery }), getCard);
+  app.get('/cards', latency, validate({ query: S.OptionalIdQuery }), getCards);
   app.post('/cards', latency, requireAdmin, jsonBody, validate({ query: S.NoQuery, body: S.CardInput }), createCard);
   app.put('/cards', latency, requireAdmin, jsonBody, validate({ query: S.IdQuery, body: S.CardInput, check: idMatchesQuery }), replaceCard);
   app.delete('/cards', latency, requireAdmin, validate({ query: S.IdQuery }), deleteCard);
 
   app.get('/decks/search', latency, validate({ query: S.DeckSearchQuery }), searchDecks);
-  app.get('/decks', latency, validate({ query: S.IdQuery }), getDeck);
+  app.get('/decks', latency, validate({ query: S.OptionalIdQuery }), getDecks);
   app.post('/decks', latency, requireAdmin, jsonBody, validate({ query: S.NoQuery, body: S.DeckInput, check: deckRules }), createDeck);
   app.put('/decks', latency, requireAdmin, jsonBody, validate({ query: S.IdQuery, body: S.DeckInput, check: deckRules }), replaceDeck);
   app.delete('/decks', latency, requireAdmin, validate({ query: S.IdQuery }), deleteDeck);

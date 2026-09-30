@@ -36,7 +36,7 @@ Or from this folder: `npx playwright test`, one file `npx playwright test 04-aut
 | Spec | Lesson | Shows |
 |---|---|---|
 | `01-health` | The first request | `toBeOK()`, `status()`, lower-case `headers()`, `objectContaining` |
-| `02-get-by-id` | Query params, 400 vs 404 | `params: { id }`, `toMatchObject`, `toBeCloseTo`, `arrayContaining`, `toContainEqual` |
+| `02-get-by-id` | Get all, get one, 400 vs 404 | array vs object responses, `params: { id }`, `toMatchObject`, `toBeCloseTo`, `arrayContaining`, `toContainEqual` |
 | `03-search-and-pagination` | Filters, sorting, paging | encoding with `params`, empty results, a loop over pages, asserting only on your own data |
 | `04-auth` | Tokens, 401 vs 403 | login, 3 ways to reuse a token, the kinds of 401, the viewer's 403, check order, logout |
 | `05-crud-chain` | Chaining requests | `test.step`, capturing the id and `Location`, PUT with a GET body, 204 has no body |
@@ -61,7 +61,8 @@ Extra demos:
 Ideas that build on each spec (the README of the API lists every rule and error code):
 
 1. **01**: assert that `settings.chaosRate` in `/health` is 0 and that `data.decks` is at least 6 (other tests create decks in parallel).
-2. **02**: get the deck `Blank Grimoire` (`SEED.decks.blankGrimoire`) and assert that it has no cards and `totalCards` 0.
+2. **02**: get the deck `Blank Grimoire` (`SEED.decks.blankGrimoire`) and assert that it has no cards and `totalCards` 0; then
+   `GET /decks` (all decks) and find it in the array by name.
 3. **03**: search `/decks/search?difficulty=beginner` and assert the three seed deck names (keep only ids starting with `d0000000-`:
    test decks are beginner decks too); then page through them with `pageSize: 1`.
 4. **04**: write the `TOKEN_EXPIRED` test: start the API yourself with `TOKEN_TTL_SECONDS=5`, run only your spec with `API_BASE_URL`,

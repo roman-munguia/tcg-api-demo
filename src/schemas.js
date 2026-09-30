@@ -194,6 +194,24 @@ export const DeckInput = {
 
 // ---------- lists ----------
 
+export const CardList = {
+  title: 'CardList',
+  description: 'All cards (GET /cards without ?id=), ordered by id. Use /cards/search to filter, sort or page.',
+  type: 'array',
+  maxItems: 10000,
+  items: Card,
+  examples: [[SEED_CARDS[0], SEED_CARDS[1]]],
+};
+
+export const DeckList = {
+  title: 'DeckList',
+  description: 'All decks (GET /decks without ?id=), ordered by id. Use /decks/search to filter, sort or page.',
+  type: 'array',
+  maxItems: 10000,
+  items: Deck,
+  examples: [[withTotal(SEED_DECKS[0]), withTotal(SEED_DECKS[5])]],
+};
+
 const page = (itemSchema, name, example) => ({
   title: `${name}Page`,
   description: `One page of ${name.toLowerCase()} search results.`,
@@ -422,8 +440,17 @@ export const IdQuery = {
   type: 'object',
   additionalProperties: false,
   required: ['id'],
-  properties: { id: uuid('Id of the resource: a lowercase UUID. Required; to list or search use the /search endpoint.', [cardId(1)]) },
+  properties: { id: uuid('Id of the resource: a lowercase UUID. Required.', [cardId(1)]) },
   examples: [{ id: cardId(1) }],
+};
+
+export const OptionalIdQuery = {
+  title: 'OptionalIdQuery',
+  description: 'With id: one resource. Without id: all of them.',
+  type: 'object',
+  additionalProperties: false,
+  properties: { id: uuid('Id of the resource: a lowercase UUID. Leave it out to get all of them.', [cardId(1)]) },
+  examples: [{ id: cardId(1) }, {}],
 };
 
 export const NoQuery = {
@@ -477,6 +504,6 @@ export const DeckSearchQuery = {
 
 /** The schemas published at /schemas/<Name>.json and under components.schemas. */
 export const PUBLIC_SCHEMAS = {
-  Card, CardInput, AttributeValue, CardPage, Deck, DeckInput, DeckCard, DeckPage,
+  Card, CardInput, AttributeValue, CardList, CardPage, Deck, DeckInput, DeckCard, DeckList, DeckPage,
   LoginRequest, LoginResponse, User, Me, Health, ResetResult, SchemaIndex, ErrorResponse, ErrorDetail,
 };

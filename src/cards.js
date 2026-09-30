@@ -30,11 +30,13 @@ const cardFrom = (body, id, createdAt, updatedAt) => ({
   updatedAt,
 });
 
-/** GET /cards?id= */
-export function getCard(req, res) {
-  const card = findOr404(req.app.locals.db, 'cards', req.validQuery.id);
+/** GET /cards?id= (one card), or GET /cards (all cards, ordered by id) */
+export function getCards(req, res) {
+  const { db } = req.app.locals;
+  const { id } = req.validQuery;
+  const result = id === undefined ? db.listAll('cards') : findOr404(db, 'cards', id);
   injectChaos(req);
-  res.json(card);
+  res.json(result);
 }
 
 /** GET /cards/search */

@@ -51,11 +51,13 @@ const deckFrom = (body, id, createdAt, updatedAt) => ({
   updatedAt,
 });
 
-/** GET /decks?id= */
-export function getDeck(req, res) {
-  const deck = findOr404(req.app.locals.db, 'decks', req.validQuery.id);
+/** GET /decks?id= (one deck), or GET /decks (all decks, ordered by id) */
+export function getDecks(req, res) {
+  const { db } = req.app.locals;
+  const { id } = req.validQuery;
+  const result = id === undefined ? db.listAll('decks').map(withTotal) : withTotal(findOr404(db, 'decks', id));
   injectChaos(req);
-  res.json(withTotal(deck));
+  res.json(result);
 }
 
 /** GET /decks/search */

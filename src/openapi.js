@@ -230,7 +230,7 @@ Manual alternative: click **Authorize** and paste **only the token** (without "B
 ${users}
 
 ### Conventions
-- Get, replace and delete one resource with **?id=** (\`GET /cards?id=...\`); list and filter with **/search**.
+- \`GET /cards\` returns all cards; \`GET /cards?id=...\` one card. Replace and delete one with **?id=**. Filter, sort and page with **/search**.
 - Reading is public; creating, changing and deleting needs an admin token.
 - POST/PUT bodies have the same shape as GET responses (read-only fields are ignored).
 - Every error has the shape \`{ status, code, message, details: [{ field, rule, message }], requestId }\`.
@@ -269,7 +269,7 @@ export function buildOpenApi(config) {
     servers: [{ url: '/', description: 'Same origin as this page' }],
     tags: [
       { name: 'Auth', description: 'Log in to get a bearer token. Tokens are random, kept in memory, and end on logout, expiry or restart.' },
-      { name: 'Cards', description: 'Glyphwild cards. Get/replace/delete with ?id=, list with /cards/search.' },
+      { name: 'Cards', description: 'Glyphwild cards. GET /cards lists all; get/replace/delete one with ?id=; filter with /cards/search.' },
       { name: 'Decks', description: 'Decks list cards as [{ cardId, quantity }]. totalCards is computed.' },
       { name: 'Admin', description: 'Restore the demo data.' },
       { name: 'Health', description: 'Is the API up, and which knobs are on?' },
@@ -319,11 +319,18 @@ export function buildOpenApi(config) {
       },
       '/cards': {
         get: {
-          tags: ['Cards'], operationId: 'getCard', summary: 'Get one card by ?id=',
-          description: 'Public. Without ?id= you get 400 (to list cards use /cards/search). A malformed id gives 400, an unknown one 404.',
-          parameters: [...queryParams(S.IdQuery, cardId(1)), ...TEACHING_HEADERS],
+          tags: ['Cards'], operationId: 'getCards', summary: 'Get all cards, or one card by ?id=',
+          description: 'Public. Without ?id= you get ALL cards as an array, ordered by id. With ?id= you get that one card as an object: '
+            + 'a malformed id gives 400, an unknown one 404. To filter, sort or page, use /cards/search.',
+          parameters: [...queryParams(S.OptionalIdQuery, cardId(1)), ...TEACHING_HEADERS],
           responses: {
-            200: ok('The card.', S.Card),
+            200: {
+              description: 'With ?id=: the card (an object). Without ?id=: all cards (an array).',
+              content: json({ oneOf: [S.Card, S.CardList] }, {
+                one: { summary: 'GET /cards?id=... (one card)', value: SEED_CARDS[0] },
+                all: { summary: 'GET /cards (all cards; shortened here)', value: [SEED_CARDS[0], SEED_CARDS[1]] },
+              }),
+            },
             ...errors({ 400: ['VALIDATION_ERROR'], 404: ['NOT_FOUND'], 500: ['CHAOS_INJECTED'] }),
           },
         },
@@ -376,11 +383,18 @@ export function buildOpenApi(config) {
       },
       '/decks': {
         get: {
-          tags: ['Decks'], operationId: 'getDeck', summary: 'Get one deck by ?id=',
-          description: 'Public. Without ?id= you get 400 (to list decks use /decks/search).',
-          parameters: [...queryParams(S.IdQuery, deckId(1)), ...TEACHING_HEADERS],
+          tags: ['Decks'], operationId: 'getDecks', summary: 'Get all decks, or one deck by ?id=',
+          description: 'Public. Without ?id= you get ALL decks as an array, ordered by id. With ?id= you get that one deck as an object. '
+            + 'To filter, sort or page, use /decks/search.',
+          parameters: [...queryParams(S.OptionalIdQuery, deckId(1)), ...TEACHING_HEADERS],
           responses: {
-            200: ok('The deck.', S.Deck),
+            200: {
+              description: 'With ?id=: the deck (an object). Without ?id=: all decks (an array).',
+              content: json({ oneOf: [S.Deck, S.DeckList] }, {
+                one: { summary: 'GET /decks?id=... (one deck)', value: S.Deck.examples[0] },
+                all: { summary: 'GET /decks (all decks; shortened here)', value: S.DeckList.examples[0] },
+              }),
+            },
             ...errors({ 400: ['VALIDATION_ERROR'], 404: ['NOT_FOUND'], 500: ['CHAOS_INJECTED'] }),
           },
         },

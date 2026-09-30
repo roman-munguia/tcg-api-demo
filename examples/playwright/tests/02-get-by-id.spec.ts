@@ -1,6 +1,15 @@
-// Lesson 2: GET one resource with a query parameter (?id=), and the difference between 400 and 404.
+// Lesson 2: GET everything, GET one resource with a query parameter (?id=), and the difference between 400 and 404.
 import { test, expect } from '@playwright/test';
 import { SEED } from '../data';
+
+test('GET /cards without ?id= returns all cards', async ({ request }) => {
+  const response = await request.get('/cards');
+  await expect(response).toBeOK();
+  const cards = await response.json();
+  expect(Array.isArray(cards)).toBe(true); // a list is an array; one card (below) is an object
+  expect(cards.length).toBeGreaterThanOrEqual(25); // other tests may add cards in parallel
+  expect(cards.map((c: any) => c.name)).toContain('Cinderwing Drake');
+});
 
 test('GET /cards?id= returns the card', async ({ request }) => {
   // `params` builds and encodes the query string for us: /cards?id=c0000000-...
@@ -29,15 +38,12 @@ test('GET /decks?id= returns the deck list with quantities', async ({ request })
   expect(deck.cards).toContainEqual({ cardId: SEED.cards.cinderwingDrake, quantity: 2 });
 });
 
-test('400 when the id is missing or malformed', async ({ request }) => {
-  const missing = await request.get('/cards');
-  expect(missing.status()).toBe(400);
-  const body = await missing.json();
+test('400 when the id is malformed', async ({ request }) => {
+  const response = await request.get('/cards', { params: { id: SEED.cards.cinderwingDrake.toUpperCase() } });
+  expect(response.status()).toBe(400);
+  const body = await response.json();
   expect(body.code).toBe('VALIDATION_ERROR');
-  expect(body.details[0]).toMatchObject({ field: 'query.id', rule: 'required' });
-
-  const upperCase = await request.get('/cards', { params: { id: SEED.cards.cinderwingDrake.toUpperCase() } });
-  expect(upperCase.status()).toBe(400);
+  expect(body.details[0]).toMatchObject({ field: 'query.id', rule: 'pattern' });
 });
 
 test('404 when a well-formed id does not exist', async ({ request }) => {

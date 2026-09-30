@@ -32,12 +32,10 @@ function pointerToPath(pointer) {
     .join('');
 }
 
-function friendlyMessage(e, where, path) {
+function friendlyMessage(e, where) {
   switch (e.keyword) {
     case 'required':
-      return where === 'query' && e.params.missingProperty === 'id'
-        ? `is required (to list or search, use ${path.replace(/\/+$/, '')}/search)`
-        : 'is required';
+      return 'is required';
     case 'additionalProperties': {
       const allowed = Object.keys(e.parentSchema.properties ?? {});
       if (where === 'query') {
@@ -63,14 +61,14 @@ function friendlyMessage(e, where, path) {
 }
 
 /** Turns Ajv errors into [{ field, rule, message }]. `where` is 'query', 'body' or 'header'. */
-export function toDetails(errors, where, path = '') {
+export function toDetails(errors, where) {
   const details = [];
   for (const e of errors) {
     // A bad attribute NAME produces two errors; the inner one (with propertyName) is the useful one.
     if (e.keyword === 'propertyNames') continue;
     let field = where + pointerToPath(e.instancePath);
     let rule = e.keyword;
-    let message = friendlyMessage(e, where, path);
+    let message = friendlyMessage(e, where);
     if (e.propertyName != null) {
       field += `.${e.propertyName}`;
       rule = 'propertyNames';
@@ -109,10 +107,10 @@ export function validate({ query, body, check } = {}) {
     if (checkQuery) {
       // Express 5 makes req.query a getter that returns a fresh object each time, so validate a copy.
       const q = { ...req.query };
-      if (!checkQuery(q)) details.push(...toDetails(checkQuery.errors, 'query', req.path));
+      if (!checkQuery(q)) details.push(...toDetails(checkQuery.errors, 'query'));
       req.validQuery = q;
     }
-    if (checkBody && !checkBody(req.body)) details.push(...toDetails(checkBody.errors, 'body', req.path));
+    if (checkBody && !checkBody(req.body)) details.push(...toDetails(checkBody.errors, 'body'));
     if (details.length === 0 && check) details.push(...check(req));
     if (details.length) throw validationError(finalizeDetails(details));
     next();

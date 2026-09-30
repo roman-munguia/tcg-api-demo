@@ -20,7 +20,9 @@ describe('decks', () => {
     assert.deepEqual(res.body, withTotal(SEED_DECKS[0]));
     assert.equal(res.body.totalCards, 10);
     assert.equal((await api.call('GET', '/decks', { query: { id: MISSING_DECK_ID } })).status, 404);
-    assert.deepEqual(rules((await api.call('GET', '/decks')).body), ['query.id:required']);
+    const all = await api.call('GET', '/decks');
+    assert.equal(all.status, 200);
+    assert.deepEqual(all.body, SEED_DECKS.map(withTotal));
   });
 
   it('POST keeps card order, computes totalCards, ignores read-only fields', async () => {

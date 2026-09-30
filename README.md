@@ -107,7 +107,8 @@ Tokens are random opaque strings (`tcg_` + 43 characters, not JWTs), valid for 2
 
 ## 3. Endpoints
 
-Reading is public. Creating, changing and deleting needs an **admin** token. One resource is addressed with the **`?id=` query parameter**; lists come from **`/search`**.
+Reading is public. Creating, changing and deleting needs an **admin** token. `GET /cards` and `GET /decks` return **everything**;
+one resource is addressed with the **`?id=` query parameter**; **`/search`** filters, sorts and pages.
 
 | Method | Path | Auth | What it does | Success |
 |---|---|---|---|---|
@@ -115,12 +116,14 @@ Reading is public. Creating, changing and deleting needs an **admin** token. One
 | POST | `/auth/login` | - | `{ username, password }` -> a bearer token | 200 |
 | GET | `/auth/me` | any token | Who owns this token | 200 |
 | POST | `/auth/logout` | any token | Revoke this token | 204 |
-| GET | `/cards?id=` | - | One card | 200 |
+| GET | `/cards` | - | All cards (an array, ordered by id) | 200 |
+| GET | `/cards?id=` | - | One card (an object) | 200 |
 | GET | `/cards/search` | - | Filter, sort and page through cards | 200 |
 | POST | `/cards` | admin | Create a card | 201 + `Location` |
 | PUT | `/cards?id=` | admin | Replace a card (full replacement) | 200 |
 | DELETE | `/cards?id=` | admin | Delete a card (409 while a deck uses it) | 204 |
-| GET | `/decks?id=` | - | One deck | 200 |
+| GET | `/decks` | - | All decks (an array, ordered by id) | 200 |
+| GET | `/decks?id=` | - | One deck (an object) | 200 |
 | GET | `/decks/search` | - | Filter, sort and page through decks | 200 |
 | POST | `/decks` | admin | Create a deck | 201 + `Location` |
 | PUT | `/decks?id=` | admin | Replace a deck | 200 |
@@ -132,7 +135,8 @@ Reading is public. Creating, changing and deleting needs an **admin** token. One
 
 Good to know:
 
-- `GET /cards` **without** `?id=` is a 400 that points you to `/cards/search`.
+- `GET /cards` **without** `?id=` returns all cards as a JSON **array**; with `?id=` it returns one card as an **object**. Same for `/decks`.
+  PUT and DELETE always need `?id=` (400 `required` without it).
 - POST and PUT bodies have **the same shape as GET responses**. Read-only fields (`id`, `createdAt`, `updatedAt`, `totalCards`) are accepted and ignored,
   so you can PUT a GET response back unchanged. For POST, change the `name` first: names are unique.
 - PUT is a **full replacement**: optional fields you leave out go back to their defaults. `createdAt` is kept; `updatedAt` always changes.
@@ -240,7 +244,7 @@ Field rules at a glance (each row is a ready-made negative test):
 | a `cardId` that doesn't exist | `body.cards[0].cardId` / `cardExists` |
 | more than 40 cards in total | `body.cards` / `maxTotalCards` |
 | PUT with a body `id` different from `?id` | `body.id` / `idMatchesQuery` |
-| `?id=` missing / `ABC` / given twice | `query.id` / `required`, `pattern`, `singleValue` |
+| `?id=` missing on PUT/DELETE / `ABC` / given twice | `query.id` / `required`, `pattern`, `singleValue` |
 | `/cards/search?nmae=x` | `query.nmae` / `additionalProperties` |
 
 ---

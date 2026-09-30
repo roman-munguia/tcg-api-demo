@@ -21,11 +21,16 @@ describe('cards', () => {
       assert.match(res.headers.get('content-type'), /application\/json/);
     });
 
-    it('400 without id, with a hint to /cards/search', async () => {
+    it('without id returns ALL cards as an array, ordered by id', async () => {
       const res = await api.call('GET', '/cards');
-      assert.equal(res.status, 400);
-      assert.deepEqual(rules(res.body), ['query.id:required']);
-      assert.match(res.body.details[0].message, /\/cards\/search/);
+      assert.equal(res.status, 200);
+      assert.ok(Array.isArray(res.body));
+      assert.deepEqual(res.body, SEED_CARDS);
+      const created = (await api.call('POST', '/cards', { token: admin, body: cardPayload() })).body;
+      const after = await api.call('GET', '/cards');
+      assert.equal(after.body.length, 26);
+      assert.ok(after.body.some((c) => c.id === created.id));
+      assert.deepEqual(rules((await api.call('GET', '/cards', { query: { limit: 5 } })).body), ['query.limit:additionalProperties']);
     });
 
     for (const bad of ['C0000000-0000-4000-8000-000000000001', 'abc', `urn:uuid:${cardId(1)}`, '']) {
