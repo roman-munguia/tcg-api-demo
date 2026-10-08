@@ -1,0 +1,34 @@
+info:
+  name: Chaos - first try fails
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/cards/search"
+  headers:
+    - name: X-Chaos-Fail-Times
+      value: "1"
+    - name: X-Chaos-Key
+      value: "{{chaosKey}}"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        // A fresh key per run: the first request with this key fails once.
+        bru.setVar("chaosKey", `bruno-${Date.now()}`);
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "500"
+    - expression: res.body.code
+      operator: eq
+      value: "CHAOS_INJECTED"
+    - expression: res.headers['x-chaos']
+      operator: eq
+      value: "injected"
+
+docs: |-
+  `X-Chaos-Fail-Times: N` + `X-Chaos-Key`: the first N requests with that key fail with 500.

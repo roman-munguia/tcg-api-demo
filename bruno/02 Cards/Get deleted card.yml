@@ -1,0 +1,22 @@
+info:
+  name: Get deleted card
+  type: http
+  seq: 8
+
+http:
+  method: GET
+  url: "{{baseUrl}}/cards?id={{createdCardId}}"
+  params:
+    - name: id
+      value: "{{createdCardId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "404"
+    - expression: res.body.code
+      operator: eq
+      value: "NOT_FOUND"

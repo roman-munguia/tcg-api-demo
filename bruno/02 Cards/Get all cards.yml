@@ -1,0 +1,22 @@
+info:
+  name: Get all cards
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/cards"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("an array with every card", function () {
+          expect(res.getStatus()).to.equal(200);
+          expect(res.getBody()).to.be.an("array");
+          expect(res.getBody().length).to.be.at.least(25);
+        });
+
+docs: |-
+  Without `?id=` you get ALL cards as an array.

@@ -1,0 +1,28 @@
+info:
+  name: Get card by id
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/cards?id={{cardId}}"
+  params:
+    - name: id
+      value: "{{cardId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.name
+      operator: eq
+      value: "Cinderwing Drake"
+    - expression: res.body.attributes.type
+      operator: eq
+      value: "Creature"
+
+docs: |-
+  With `?id=` you get one card as an object. `cardId` comes from the environment.

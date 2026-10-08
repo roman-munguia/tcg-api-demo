@@ -14,7 +14,8 @@
     "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\"",
     "reset": "node --env-file-if-exists=.env scripts/reset.js",
     "examples:install": "npm --prefix examples/playwright ci",
-    "examples:test": "npm --prefix examples/playwright test"
+    "examples:test": "npm --prefix examples/playwright test",
+    "bruno:test": "cd bruno && npx --yes @usebruno/cli@4.2.1 run -r --env local"
   },
   "scarfSettings": {
     "enabled": false

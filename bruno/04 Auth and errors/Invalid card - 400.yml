@@ -1,0 +1,36 @@
+info:
+  name: Invalid card - 400
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/cards"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "imageUrl": "/not-absolute.png",
+        "dropRate": 15,
+        "rarity": "Rare"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("400 lists every problem with field and rule", function () {
+          expect(res.getStatus()).to.equal(400);
+          const problems = res.getBody().details.map((d) => `${d.field}:${d.rule}`);
+          expect(problems).to.deep.equal([
+            "body.dropRate:maximum",
+            "body.imageUrl:pattern",
+            "body.name:minLength",
+            "body.rarity:additionalProperties",
+          ]);
+        });
+
+docs: |-
+  Assert on `details[].field` and `details[].rule`, not on the English message.

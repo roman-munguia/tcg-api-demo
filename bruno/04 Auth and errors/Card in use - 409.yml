@@ -1,0 +1,25 @@
+info:
+  name: Card in use - 409
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/cards?id={{cardId}}"
+  params:
+    - name: id
+      value: "{{cardId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "409"
+    - expression: res.body.code
+      operator: eq
+      value: "CARD_IN_USE"
+
+docs: |-
+  Card 01 is still used by two decks. Delete the decks first (teardown order).

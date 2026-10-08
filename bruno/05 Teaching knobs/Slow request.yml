@@ -1,0 +1,25 @@
+info:
+  name: Slow request
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/cards/search"
+  headers:
+    - name: X-Delay-Ms
+      value: "300"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("took at least 300 ms", function () {
+          expect(res.getStatus()).to.equal(200);
+          expect(res.getResponseTime()).to.be.at.least(300);
+          expect(Number(res.getHeader("x-delay-applied-ms"))).to.be.at.least(300);
+        });
+
+docs: |-
+  `X-Delay-Ms` (0-10000) slows this one request down. Try 3000 with a request timeout of 1000 ms (Settings tab).

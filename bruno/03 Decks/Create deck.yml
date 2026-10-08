@@ -1,0 +1,38 @@
+info:
+  name: Create deck
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/decks"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{deckName}}",
+        "theme": "Made in Bruno",
+        "difficulty": "beginner",
+        "cards": [
+          {
+            "cardId": "{{cardId}}",
+            "quantity": 2
+          }
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        bru.setVar("deckName", `Bruno Deck ${Date.now()}`);
+    - type: after-response
+      code: |-
+        bru.setVar("createdDeckId", res.body.id);
+    - type: tests
+      code: |-
+        test("201 and totalCards is computed", function () {
+          expect(res.getStatus()).to.equal(201);
+          expect(res.getBody().totalCards).to.equal(2);
+        });

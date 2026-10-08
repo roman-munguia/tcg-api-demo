@@ -1,0 +1,25 @@
+info:
+  name: Get deck by id
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/decks?id={{deckId}}"
+  params:
+    - name: id
+      value: "{{deckId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.name
+      operator: eq
+      value: "Ashes & Embers"
+    - expression: res.body.totalCards
+      operator: eq
+      value: "10"

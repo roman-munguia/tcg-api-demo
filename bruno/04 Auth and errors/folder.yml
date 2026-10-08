@@ -1,0 +1,13 @@
+info:
+  name: 04 Auth and errors
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Negative tests. Every error has the shape `{ status, code, message, details: [{ field, rule, message }], requestId }`.
+    At the end this folder logs in as the read-only **viewer** and then logs out, so run **01 Setup / Login as admin** again afterwards.
+  type: text/markdown

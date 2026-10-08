@@ -22,14 +22,59 @@ Or from this folder: `npx playwright test`, one file `npx playwright test 04-aut
   specs 02 and 03 then assume nobody edited the seed rows.
 - **Credentials:** the repo-root `.env` is read automatically, so custom `ADMIN_*` / `VIEWER_*` values work for the tests too.
 
-## Files
+## Structure
 
-| File | What it is |
+The suite follows a **service object model**, the API-testing twin of the Page Object Model: specs never build URLs or
+auth headers themselves, they call methods on service classes.
+
+```
+endpoints/   path strings for each service (like a POM's locators/)       e.g. cardsService.endpoints.ts
+services/    service classes; BaseService holds the shared helpers         e.g. cardsService.service.ts
+types/       TypeScript types of the API's requests and responses          api.ts, endpoints.ts, index.ts
+data/        test data: seed ids, credentials, unique payload builders     testData.ts
+tests/       the specs, one lesson each, plus global.setup.ts
+```
+
+| Class | Methods |
 |---|---|
-| `playwright.config.ts` | baseURL, the setup project, the webServer |
-| `data.ts` | seed ids (`SEED`), credentials, `uniqueName()`, `cardPayload()`, `deckPayload()` |
-| `fixtures.ts` | `adminRequest` / `viewerRequest` (already logged in) and `cleanup` (deletes what a test created) |
-| `tests/global.setup.ts` | checks the API is up, resets the data |
+| `BaseService` | `setToken()`, `getHealth()`, `resetData()`, `getSchema(name)`; adds `Authorization: Bearer <token>` when it has a token |
+| `AuthService extends BaseService` | `login(credentials)`, `loginAs('admin' \| 'viewer')` (keeps and returns the token), `me()`, `logout()` |
+| `CardsService extends BaseService` | `getAll()`, `getById(id)`, `search(params)`, `create(data)`, `replace(id, data)`, `deleteById(id)`, `cleanup()` |
+| `DecksService extends BaseService` | the same methods for decks |
+
+Every method returns Playwright's `APIResponse`, so the spec still does the asserting. The last argument of most methods takes extra
+request options (`headers`, `timeout`, `maxRetries`), which lessons 09 and 10 use for the teaching headers.
+
+A spec creates its services in `beforeEach` and logs in once per `describe` in `beforeAll`:
+
+```ts
+test.describe('Card CRUD Tests', () => {
+  let adminToken: string;
+  let cardsService: CardsService;
+
+  test.beforeAll(async ({ request }) => {
+    adminToken = await new AuthService(request).loginAs('admin');
+  });
+
+  test.beforeEach(async ({ request }) => {
+    cardsService = new CardsService(request, adminToken);
+  });
+
+  test.afterEach(async () => {
+    await cardsService.cleanup(); // deletes the cards this service created, even when the test failed
+  });
+
+  test('create a card', async () => {
+    const response = await cardsService.create(cardPayload());
+    expect(response.status()).toBe(201);
+  });
+});
+```
+
+`create()` remembers the ids it created, and `cleanup()` deletes them. Clean up decks before cards: a card that is still in a deck cannot be
+deleted (409 CARD_IN_USE).
+
+Formatting: `npx prettier --write "**/*.ts"` (settings in `.prettierrc`).
 
 ## Lesson map
 
@@ -38,11 +83,11 @@ Or from this folder: `npx playwright test`, one file `npx playwright test 04-aut
 | `01-health` | The first request | `toBeOK()`, `status()`, lower-case `headers()`, `objectContaining` |
 | `02-get-by-id` | Get all, get one, 400 vs 404 | array vs object responses, `params: { id }`, `toMatchObject`, `toBeCloseTo`, `arrayContaining`, `toContainEqual` |
 | `03-search-and-pagination` | Filters, sorting, paging | encoding with `params`, empty results, a loop over pages, asserting only on your own data |
-| `04-auth` | Tokens, 401 vs 403 | login, 3 ways to reuse a token, the kinds of 401, the viewer's 403, check order, logout |
+| `04-auth` | Tokens, 401 vs 403 | login, reusing a token by hand vs with a service, the kinds of 401, the viewer's 403, check order, logout |
 | `05-crud-chain` | Chaining requests | `test.step`, capturing the id and `Location`, PUT with a GET body, 204 has no body |
 | `06-negative-data-driven` | Negative and boundary tests | a table of cases -> one test each, 415, `INVALID_JSON`, 409 and unique data |
 | `07-schema-validation` | Contract tests | Ajv with the API's `/schemas/*.json` |
-| `08-decks-and-cleanup` | Related data | teardown order (decks before cards), `CARD_IN_USE`, deck rules |
+| `08-decks-and-cleanup` | Related data | two services in one test, teardown order (decks before cards), `CARD_IN_USE`, deck rules |
 | `09-timeouts-latency` | Timeouts | `X-Delay-Ms`, per-request `timeout` |
 | `10-retries-chaos` | Flakiness and retries | `X-Chaos-Fail-Times`, `toPass()`, `expect.poll()`, why `maxRetries` doesn't retry a 500 |
 

@@ -1,0 +1,12 @@
+info:
+  name: 01 Setup
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Run these first. **Login as admin** stores the token; **Reset seed data** restores the 25 cards and 6 decks.
+  type: text/markdown

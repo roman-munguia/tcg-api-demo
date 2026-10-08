@@ -9,7 +9,8 @@ Playwright (or Postman, REST Assured, ...):
 - 25 cards and 6 decks of **seed data** with fixed ids, and a **reset** endpoint
 - **teaching knobs** for slow responses and random failures
 - runs with **Node.js** or **Docker/Podman compose**
-- a **Playwright starter suite** in [`examples/playwright`](examples/playwright/README.md)
+- a **Bruno collection** in [`bruno/`](bruno) with tests on every request
+- a **Playwright starter suite** in [`examples/playwright`](examples/playwright/README.md), built on a service object model (`BaseService` + one service class per resource)
 
 > For learning only. The credentials are public on purpose; do not expose it to the internet.
 
@@ -401,11 +402,51 @@ npm run examples:test
 ```
 
 Against a server that is already running (e.g. the compose container): `cd examples/playwright && API_BASE_URL=http://localhost:3000 npx playwright test`.
-See [examples/playwright/README.md](examples/playwright/README.md) for the lesson map and exercises.
+See [examples/playwright/README.md](examples/playwright/README.md) for its structure (endpoints/, services/, types/, data/), the lesson map and exercises.
 
 ---
 
-## 12. Changing the API
+## 12. Bruno collection
+
+[Bruno](https://www.usebruno.com/) is a free, offline API client (like Postman) that keeps collections as plain files in the repo.
+The collection in [`bruno/`](bruno) is a guided tour of the API, with an assertion or test on every request.
+
+**Install Bruno** (version 4.x):
+
+| OS | Command |
+|---|---|
+| Linux | `flatpak install flathub com.usebruno.Bruno` (or the `.rpm` / `.AppImage` from the [releases page](https://github.com/usebruno/bruno/releases)) |
+| macOS | `brew install bruno` |
+| Windows | `winget install Bruno.Bruno` |
+
+**Use it:**
+
+1. Start the API (`npm start` or `docker compose up -d`).
+2. In Bruno: **Open Collection** and pick the `bruno` folder of this repo.
+3. Choose the **local** environment (top right); **host-port-8080** is for compose with `HOST_PORT=8080`.
+4. Run **01 Setup / Login as admin**. Its post-response script stores the token in `{{token}}`, and every request inherits
+   `Authorization: Bearer {{token}}` from the collection settings.
+5. Work through the folders in order, or right-click the collection and choose **Run** to run everything.
+
+| Folder | Shows |
+|---|---|
+| 01 Setup | health check, login (saving a variable from a response), reset |
+| 02 Cards | get all / by id, search, then a create -> get -> replace -> delete chain using `{{createdCardId}}` |
+| 03 Decks | the same for decks, `totalCards`, decks that use a card |
+| 04 Auth and errors | 400 with `details`, 401 (no token, wrong password, revoked token), 403 as viewer, 404, 409 |
+| 05 Teaching knobs | `X-Delay-Ms` and `X-Chaos-Fail-Times` + `X-Chaos-Key` |
+
+Requests demonstrate the three ways Bruno checks responses: the **Assert** tab (declarative), the **Tests** tab (JavaScript with `expect`),
+and **Script** (pre-request / post-response, e.g. `bru.setVar("token", res.body.token)`). Folder 04 ends logged in as the
+viewer and then logged out: run **Login as admin** again before you continue.
+
+**From a terminal** (no GUI, e.g. in CI), with the API running: `npm run bruno:test`. It runs the whole collection with the
+[Bruno CLI](https://docs.usebruno.com/bru-cli/overview) and prints a pass/fail summary.
+
+The files use Bruno's YAML format (`opencollection.yml`, `folder.yml`, one `.yml` per request), so changes show up as readable diffs.
+Requests saved from the Bruno app are written in the same format.
+
+## 13. Changing the API
 
 The code is plain JavaScript (no build step) in [`src/`](src). Start with the route table in [`src/app.js`](src/app.js).
 
@@ -422,7 +463,7 @@ limits and examples, every documented example must return the status in its titl
 
 ---
 
-## 13. Troubleshooting and common mistakes
+## 14. Troubleshooting and common mistakes
 
 | Symptom | Cause / fix |
 |---|---|

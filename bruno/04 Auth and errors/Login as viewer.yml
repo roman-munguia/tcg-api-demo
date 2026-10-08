@@ -1,0 +1,33 @@
+info:
+  name: Login as viewer
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "{{viewerUsername}}",
+        "password": "{{viewerPassword}}"
+      }
+  auth:
+    type: none
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        bru.setVar("token", res.body.token);
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.user.role
+      operator: eq
+      value: "viewer"
+
+docs: |-
+  Replaces `token` with the viewer's token.

@@ -1,0 +1,21 @@
+info:
+  name: Token after logout - 401
+  type: http
+  seq: 10
+
+http:
+  method: GET
+  url: "{{baseUrl}}/auth/me"
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "401"
+    - expression: res.body.code
+      operator: eq
+      value: "INVALID_TOKEN"
+
+docs: |-
+  The token was revoked by Logout. Run **01 Setup / Login as admin** to get a fresh one.
