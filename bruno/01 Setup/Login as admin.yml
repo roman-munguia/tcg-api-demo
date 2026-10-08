@@ -1,0 +1,33 @@
+info:
+  name: Login as admin
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/login"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "{{adminUsername}}",
+        "password": "{{adminPassword}}"
+      }
+  auth:
+    type: none
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        bru.setVar("token", res.body.token);
+    - type: tests
+      code: |-
+        test("200 with a tcg_ bearer token", function () {
+          expect(res.getStatus()).to.equal(200);
+          expect(res.getBody().token).to.match(/^tcg_[A-Za-z0-9_-]{43}$/);
+          expect(res.getBody().user.role).to.equal("admin");
+        });
+
+docs: |-
+  The **post-response script** saves the token with `bru.setVar("token", ...)`. The collection's auth sends it on every later request.

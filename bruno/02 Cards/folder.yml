@@ -1,0 +1,13 @@
+info:
+  name: 02 Cards
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    A full create -> read -> replace -> delete chain. **Create card** saves the new id in `createdCardId`,
+    and the next requests use it: that is "chaining" requests.
+  type: text/markdown

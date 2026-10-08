@@ -1,0 +1,29 @@
+info:
+  name: Viewer cannot create - 403
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/cards"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Viewer Card",
+        "imageUrl": "https://images.glyphwild.example/cards/bruno.png",
+        "dropRate": 0.2
+      }
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "403"
+    - expression: res.body.code
+      operator: eq
+      value: "FORBIDDEN_ROLE"
+
+docs: |-
+  401 = we don't know who you are. 403 = we know, but your role can't do this.

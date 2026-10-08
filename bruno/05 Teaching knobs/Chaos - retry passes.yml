@@ -1,0 +1,23 @@
+info:
+  name: Chaos - retry passes
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{baseUrl}}/cards/search"
+  headers:
+    - name: X-Chaos-Fail-Times
+      value: "1"
+    - name: X-Chaos-Key
+      value: "{{chaosKey}}"
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+
+docs: |-
+  Same key again: its one failure is used up, so the retry succeeds.

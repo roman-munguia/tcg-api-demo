@@ -1,0 +1,22 @@
+info:
+  name: Delete created card
+  type: http
+  seq: 7
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/cards?id={{createdCardId}}"
+  params:
+    - name: id
+      value: "{{createdCardId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "204"
+
+docs: |-
+  204 means success with an EMPTY body.

@@ -1,0 +1,13 @@
+info:
+  name: 05 Teaching knobs
+  type: folder
+  seq: 5
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Per-request teaching headers (they work while the API runs with `TEACHING_HEADERS=true`, the default).
+    Server-wide knobs (`LATENCY_MS`, `CHAOS_RATE`) are set in `.env` or `compose.yaml`.
+  type: text/markdown

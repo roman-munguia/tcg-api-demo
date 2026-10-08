@@ -1,0 +1,30 @@
+info:
+  name: No token - 401
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/cards"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "x",
+        "imageUrl": "https://images.glyphwild.example/cards/bruno.png",
+        "dropRate": 0.2
+      }
+  auth:
+    type: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "401"
+    - expression: res.body.code
+      operator: eq
+      value: "MISSING_TOKEN"
+
+docs: |-
+  This request's auth is set to **No Auth**, overriding the collection's bearer token.

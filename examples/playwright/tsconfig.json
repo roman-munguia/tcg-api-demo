@@ -10,5 +10,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["*.ts", "tests/**/*.ts"]
+  "include": ["*.ts", "data/**/*.ts", "endpoints/**/*.ts", "services/**/*.ts", "tests/**/*.ts", "types/**/*.ts"]
 }

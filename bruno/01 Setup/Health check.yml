@@ -1,0 +1,25 @@
+info:
+  name: Health check
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/health"
+  auth:
+    type: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.status
+      operator: eq
+      value: "ok"
+    - expression: res.body.name
+      operator: eq
+      value: "glyphwild-tcg-api"
+
+docs: |-
+  Public, no token needed. Declarative checks live in the **Assert** tab.

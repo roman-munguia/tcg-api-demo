@@ -1,0 +1,12 @@
+info:
+  name: 03 Decks
+  type: folder
+  seq: 3
+
+request:
+  auth: inherit
+
+docs:
+  content: |-
+    Decks list cards as `[{ cardId, quantity }]`; the server computes `totalCards`.
+  type: text/markdown

@@ -1,0 +1,22 @@
+info:
+  name: Delete deck
+  type: http
+  seq: 6
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/decks?id={{createdDeckId}}"
+  params:
+    - name: id
+      value: "{{createdDeckId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "204"
+
+docs: |-
+  Deleting a deck never deletes its cards.

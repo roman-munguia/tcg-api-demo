@@ -1,0 +1,35 @@
+info:
+  name: Replace created card
+  type: http
+  seq: 6
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/cards?id={{createdCardId}}"
+  params:
+    - name: id
+      value: "{{createdCardId}}"
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{cardName}}",
+        "description": "Replaced from Bruno.",
+        "imageUrl": "https://images.glyphwild.example/cards/bruno.png",
+        "dropRate": 0.25
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        test("full replacement: attributes went back to {}", function () {
+          expect(res.getStatus()).to.equal(200);
+          expect(res.getBody().description).to.equal("Replaced from Bruno.");
+          expect(res.getBody().attributes).to.deep.equal({});
+        });
+
+docs: |-
+  PUT replaces the whole card: optional fields you leave out (here `attributes`) go back to their defaults.

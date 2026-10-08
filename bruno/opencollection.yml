@@ -1,0 +1,28 @@
+opencollection: 1.0.0
+
+info:
+  name: Glyphwild TCG API
+
+# Every request inherits this auth: "Authorization: Bearer {{token}}".
+# {{token}} is set by "01 Setup / Login as admin" (and changed by "04 Auth and errors / Login as viewer").
+request:
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+docs:
+  content: |-
+    # Glyphwild TCG API - Bruno collection
+
+    A guided tour of the practice API. Start the API first (`npm start` or `docker compose up -d`).
+
+    1. Pick the **local** environment (top right). Use **host-port-8080** if you started compose with `HOST_PORT=8080`.
+    2. Run **01 Setup / Login as admin**: its post-response script saves the token in the `token` variable,
+       and every request inherits `Authorization: Bearer {{token}}` from the collection.
+    3. Walk through the folders in order, or run them all at once: right-click the collection, **Run**.
+
+    Every request has assertions (the **Assert** tab) or tests (the **Tests** tab), so the runner shows pass/fail.
+    From a terminal: `npm run bruno:test` (with the API running).
+
+    Docs for every endpoint: http://localhost:3000/docs/
+  type: text/markdown

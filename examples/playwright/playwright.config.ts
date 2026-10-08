@@ -8,7 +8,10 @@ import { defineConfig } from '@playwright/test';
 // So custom credentials or a custom PORT work for the tests too.
 const rootEnv = path.resolve(__dirname, '../../.env');
 if (fs.existsSync(rootEnv)) {
-  for (const [key, value] of Object.entries(parseEnv(fs.readFileSync(rootEnv, 'utf8')))) process.env[key] ??= value;
+  for (const [key, value] of Object.entries(
+    parseEnv(fs.readFileSync(rootEnv, 'utf8'))
+  ))
+    process.env[key] ??= value;
 }
 
 // One id per test RUN. Workers (and retries, which run in new workers) re-read this file,
@@ -39,12 +42,21 @@ export default defineConfig({
   // Starts the API from the repo root, unless API_BASE_URL points at one that is already running.
   // The env below pins the knobs, so a LATENCY_MS, CHAOS_RATE or short TOKEN_TTL_SECONDS left in .env cannot make
   // the default run flaky. For knob exercises, start the API yourself and set API_BASE_URL.
-  webServer: process.env.API_BASE_URL ? undefined : {
-    command: 'npm start',
-    cwd: '../..',
-    url: `http://localhost:${port}/health`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-    env: { PORT: port, LATENCY_MS: '0', CHAOS_RATE: '0', TEACHING_HEADERS: 'true', TOKEN_TTL_SECONDS: '86400', LOG_REQUESTS: 'false' },
-  },
+  webServer: process.env.API_BASE_URL
+    ? undefined
+    : {
+        command: 'npm start',
+        cwd: '../..',
+        url: `http://localhost:${port}/health`,
+        reuseExistingServer: !process.env.CI,
+        timeout: 60_000,
+        env: {
+          PORT: port,
+          LATENCY_MS: '0',
+          CHAOS_RATE: '0',
+          TEACHING_HEADERS: 'true',
+          TOKEN_TTL_SECONDS: '86400',
+          LOG_REQUESTS: 'false',
+        },
+      },
 });

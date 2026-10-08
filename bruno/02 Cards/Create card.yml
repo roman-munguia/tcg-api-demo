@@ -1,0 +1,47 @@
+info:
+  name: Create card
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/cards"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{cardName}}",
+        "description": "Created from Bruno.",
+        "imageUrl": "https://images.glyphwild.example/cards/bruno.png",
+        "attributes": {
+          "type": "Creature",
+          "element": [
+            "Tide",
+            "Gale"
+          ],
+          "cost": 2,
+          "points": 3
+        },
+        "dropRate": 0.2
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        // Names must be unique, so build a new one for every run.
+        bru.setVar("cardName", `Bruno Card ${Date.now()}`);
+    - type: after-response
+      code: |-
+        bru.setVar("createdCardId", res.body.id);
+    - type: tests
+      code: |-
+        test("201 with the new card and a Location header", function () {
+          expect(res.getStatus()).to.equal(201);
+          expect(res.getBody().name).to.equal(bru.getVar("cardName"));
+          expect(res.getHeader("location")).to.equal(`/cards?id=${res.getBody().id}`);
+        });
+
+docs: |-
+  Admin only. The **pre-request script** makes a unique name; the **post-response script** saves the new id.

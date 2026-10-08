@@ -1,75 +1,110 @@
 // Lesson 4: logging in, sending the token, and 401 vs 403.
 //   401 = "we don't know who you are"      403 = "we know who you are, but you may not do this"
 import { test, expect } from '@playwright/test';
-import { CREDENTIALS, cardPayload } from '../data';
+import { CREDENTIALS, cardPayload } from '../data/testData';
+import { AuthService } from '../services/authService.service';
+import { CardsService } from '../services/cardsService.service';
+import type { ErrorResponse, LoginResponse, Me } from '../types';
 
-test('login returns a bearer token', async ({ request }) => {
-  const response = await request.post('/auth/login', { data: CREDENTIALS.admin }); // data: a plain object -> JSON
-  await expect(response).toBeOK();
-  const body = await response.json();
-  expect(body.token).toMatch(/^tcg_[A-Za-z0-9_-]{43}$/);
-  expect(body).toMatchObject({ tokenType: 'Bearer', user: { username: CREDENTIALS.admin.username, role: 'admin' } });
-});
+test.describe('Auth Tests', () => {
+  let authService: AuthService;
 
-test('wrong password -> 401, missing password -> 400', async ({ request }) => {
-  const wrong = await request.post('/auth/login', { data: { ...CREDENTIALS.admin, password: 'nope' } });
-  expect(wrong.status()).toBe(401);
-  expect((await wrong.json()).code).toBe('INVALID_CREDENTIALS');
+  test.beforeEach(async ({ request }) => {
+    authService = new AuthService(request);
+  });
 
-  const missing = await request.post('/auth/login', { data: { username: CREDENTIALS.admin.username } });
-  expect(missing.status()).toBe(400);
-});
+  test('login returns a bearer token', async () => {
+    const response = await authService.login(CREDENTIALS.admin); // sent as JSON
+    await expect(response).toBeOK();
+    const body = (await response.json()) as LoginResponse;
+    expect(body.token).toMatch(/^tcg_[A-Za-z0-9_-]{43}$/);
+    expect(body).toMatchObject({
+      tokenType: 'Bearer',
+      user: { username: CREDENTIALS.admin.username, role: 'admin' },
+    });
+  });
 
-test('reuse the token: 3 ways', async ({ request, playwright, baseURL }) => {
-  const { token } = await (await request.post('/auth/login', { data: CREDENTIALS.viewer })).json();
+  test('wrong password -> 401, missing password -> 400', async () => {
+    const wrong = await authService.login({
+      ...CREDENTIALS.admin,
+      password: 'nope',
+    });
+    expect(wrong.status()).toBe(401);
+    expect(((await wrong.json()) as ErrorResponse).code).toBe(
+      'INVALID_CREDENTIALS'
+    );
 
-  // 1. Per request
-  const me = await request.get('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
-  await expect(me).toBeOK();
-  expect((await me.json()).role).toBe('viewer');
+    const missing = await authService.login({
+      username: CREDENTIALS.admin.username,
+    });
+    expect(missing.status()).toBe(400);
+  });
 
-  // 2. A context that sends the header on every request
-  const viewer = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
-  await expect(await viewer.get('/auth/me')).toBeOK();
-  await viewer.dispose();
+  test('reuse the token: by hand, then with a service', async ({ request }) => {
+    const token = await authService.loginAs('viewer');
 
-  // 3. A fixture that logs in once per worker: see fixtures.ts (used from 05-crud-chain.spec.ts on).
-});
+    // 1. By hand: send the header yourself on every request
+    const byHand = await request.get('/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    await expect(byHand).toBeOK();
 
-test('the four kinds of 401', async ({ request }) => {
-  const noToken = await request.get('/auth/me');
-  expect(noToken.status()).toBe(401);
-  expect((await noToken.json()).code).toBe('MISSING_TOKEN');
-  expect(noToken.headers()['www-authenticate']).toContain('Bearer');
+    // 2. A service that keeps the token (authService now has it) and adds the header for you
+    const me = (await (await authService.me()).json()) as Me;
+    expect(me.role).toBe('viewer');
 
-  const { token } = await (await request.post('/auth/login', { data: CREDENTIALS.admin })).json();
-  const noPrefix = await request.get('/auth/me', { headers: { Authorization: token } }); // forgot "Bearer "
-  expect((await noPrefix.json()).code).toBe('MALFORMED_AUTH_HEADER');
+    // 3. Give the token to any other service through its constructor
+    const cardsService = new CardsService(request, token);
+    await expect(await cardsService.search()).toBeOK();
+  });
 
-  const unknown = await request.get('/auth/me', { headers: { Authorization: `Bearer tcg_${'x'.repeat(43)}` } });
-  expect((await unknown.json()).code).toBe('INVALID_TOKEN');
-  // The 4th, TOKEN_EXPIRED, needs a short TOKEN_TTL_SECONDS on the server: try TOKEN_TTL_SECONDS=30.
-});
+  test('the kinds of 401', async ({ request }) => {
+    const noToken = await authService.me(); // this service has no token yet
+    expect(noToken.status()).toBe(401);
+    expect(((await noToken.json()) as ErrorResponse).code).toBe(
+      'MISSING_TOKEN'
+    );
+    expect(noToken.headers()['www-authenticate']).toContain('Bearer');
 
-test('viewer can read but gets 403 on writes', async ({ request }) => {
-  const { token } = await (await request.post('/auth/login', { data: CREDENTIALS.viewer })).json();
-  const headers = { Authorization: `Bearer ${token}` };
+    const token = await authService.loginAs('admin');
+    const noPrefix = await request.get('/auth/me', {
+      headers: { Authorization: token },
+    }); // forgot "Bearer "
+    expect(((await noPrefix.json()) as ErrorResponse).code).toBe(
+      'MALFORMED_AUTH_HEADER'
+    );
 
-  await expect(await request.get('/cards/search', { headers })).toBeOK();
-  const create = await request.post('/cards', { headers, data: cardPayload() });
-  expect(create.status()).toBe(403);
-  expect((await create.json()).code).toBe('FORBIDDEN_ROLE');
+    authService.setToken(`tcg_${'x'.repeat(43)}`);
+    const unknown = await authService.me();
+    expect(((await unknown.json()) as ErrorResponse).code).toBe(
+      'INVALID_TOKEN'
+    );
+    // The 4th, TOKEN_EXPIRED, needs a short TOKEN_TTL_SECONDS on the server: try TOKEN_TTL_SECONDS=30.
+  });
 
-  // Check order: the role is checked BEFORE the body, so even an invalid body gets 403.
-  const invalid = await request.post('/cards', { headers, data: { nonsense: true } });
-  expect(invalid.status()).toBe(403);
-});
+  test('viewer can read but gets 403 on writes', async ({ request }) => {
+    const cardsService = new CardsService(
+      request,
+      await authService.loginAs('viewer')
+    );
 
-test('logout revokes the token', async ({ request }) => {
-  const { token } = await (await request.post('/auth/login', { data: CREDENTIALS.admin })).json();
-  const headers = { Authorization: `Bearer ${token}` };
-  expect((await request.post('/auth/logout', { headers })).status()).toBe(204);
-  const after = await request.get('/auth/me', { headers });
-  expect(after.status()).toBe(401);
-  expect((await after.json()).code).toBe('INVALID_TOKEN');
+    await expect(await cardsService.search()).toBeOK();
+    const create = await cardsService.create(cardPayload());
+    expect(create.status()).toBe(403);
+    expect(((await create.json()) as ErrorResponse).code).toBe(
+      'FORBIDDEN_ROLE'
+    );
+
+    // Check order: the role is checked BEFORE the body, so even an invalid body gets 403.
+    const invalid = await cardsService.create({ nonsense: true });
+    expect(invalid.status()).toBe(403);
+  });
+
+  test('logout revokes the token', async () => {
+    await authService.loginAs('admin');
+    expect((await authService.logout()).status()).toBe(204);
+    const after = await authService.me(); // the same (now revoked) token
+    expect(after.status()).toBe(401);
+    expect(((await after.json()) as ErrorResponse).code).toBe('INVALID_TOKEN');
+  });
 });

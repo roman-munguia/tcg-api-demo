@@ -1,0 +1,43 @@
+info:
+  name: Replace deck
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/decks?id={{createdDeckId}}"
+  params:
+    - name: id
+      value: "{{createdDeckId}}"
+      type: query
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{deckName}}",
+        "theme": "Made in Bruno",
+        "difficulty": "intermediate",
+        "cards": [
+          {
+            "cardId": "{{cardId}}",
+            "quantity": 2
+          },
+          {
+            "cardId": "c0000000-0000-4000-8000-000000000025",
+            "quantity": 3
+          }
+        ]
+      }
+  auth: inherit
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.totalCards
+      operator: eq
+      value: "5"
+    - expression: res.body.difficulty
+      operator: eq
+      value: "intermediate"
